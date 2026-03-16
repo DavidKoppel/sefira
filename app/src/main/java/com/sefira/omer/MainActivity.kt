@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
 
         val tomorrow = Calendar.getInstance().also { it.add(Calendar.DATE, 1) }
         val jc = JewishCalendar(tomorrow)
-        if (!jc.isOmerDay) {
+        if (jc.dayOfOmer <= 0) {
             binding.tvOmerInfo.visibility = View.GONE
             binding.tvStatus.text = "Not currently during Sefirat HaOmer"
             return

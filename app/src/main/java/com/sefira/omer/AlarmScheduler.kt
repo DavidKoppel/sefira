@@ -64,7 +64,8 @@ object AlarmScheduler {
         val next = date.clone() as Calendar
         next.add(Calendar.DATE, 1)
         val jc = JewishCalendar(next)
-        return if (jc.isOmerDay) jc.dayOfOmer else -1
+        val d = jc.dayOfOmer
+        return if (d > 0) d else -1
     }
 
     /**
