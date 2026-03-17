@@ -53,6 +53,9 @@ class AlarmReceiver : BroadcastReceiver() {
         // Also start the activity directly for older devices / reliable delivery
         context.startActivity(alarmIntent)
 
+        // Switch the launcher icon to today's Omer day immediately
+        DynamicIcon.update(context)
+
         // Restart the background service — it will schedule the next night's alarm
         // and update the persistent notification with the new day info
         OmerService.start(context)
