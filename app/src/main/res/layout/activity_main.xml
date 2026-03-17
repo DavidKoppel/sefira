@@ -159,57 +159,58 @@
                 android:textColor="@color/text_light"
                 android:textSize="15sp" />
 
-            <!-- Language row -->
-            <LinearLayout
+            <!-- Language row — toggle group fills full width so all 3 buttons fit in portrait -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Alarm language"
+                android:textColor="@color/text_light"
+                android:textSize="15sp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleLanguage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="8dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Language"
-                    android:textColor="@color/text_light"
-                    android:textSize="15sp"
-                    android:layout_marginEnd="16dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangEn"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="English"
+                    android:textSize="12sp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:textColor="@color/text_light" />
 
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/toggleLanguage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangBoth"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="Both"
+                    android:textSize="12sp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:textColor="@color/text_light" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLangEn"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="English"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_light" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangHe"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="עברית"
+                    android:textSize="12sp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:textColor="@color/text_light" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLangBoth"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="Both"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_light" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLangHe"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="עברית"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_light" />
-
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            </LinearLayout>
+            </com.google.android.material.button.MaterialButtonToggleGroup>
 
         </LinearLayout>
 

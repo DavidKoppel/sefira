@@ -7,6 +7,7 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.media.ToneGenerator
+import kotlin.math.roundToInt
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -24,6 +25,7 @@ class AlarmActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var toneGen: ToneGenerator? = null
     private var vibrator: Vibrator? = null
+    private var originalAlarmVolume = -1
     private val stopHandler = Handler(Looper.getMainLooper())
     private val AUTO_STOP_MS = 10_000L
     private val SNOOZE_MS    = 20 * 60 * 1000L
@@ -71,7 +73,16 @@ class AlarmActivity : AppCompatActivity() {
     // ── Sound ─────────────────────────────────────────────────────────────────
 
     private fun startAlarmSound() {
-        val volFloat = AlarmScheduler.getVolume(this) / 100f
+        val volPercent = AlarmScheduler.getVolume(this)
+        val volFloat   = volPercent / 100f
+
+        // Set the system alarm stream volume so the slider controls actual loudness
+        val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        originalAlarmVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
+        val maxVol    = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        val targetVol = (maxVol * volPercent / 100.0).roundToInt().coerceAtLeast(1)
+        am.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
+
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -104,6 +115,12 @@ class AlarmActivity : AppCompatActivity() {
         mediaPlayer = null
         toneGen?.release()
         toneGen = null
+        // Restore the system alarm volume to what it was before
+        if (originalAlarmVolume >= 0) {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            am.setStreamVolume(AudioManager.STREAM_ALARM, originalAlarmVolume, 0)
+            originalAlarmVolume = -1
+        }
     }
 
     // ── Vibration ─────────────────────────────────────────────────────────────

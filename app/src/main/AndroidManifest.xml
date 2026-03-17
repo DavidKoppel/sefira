@@ -54,10 +54,16 @@
             stopWithTask="false": service keeps running when the app is swiped away.
             It stops itself automatically after Shavuot.
         -->
+        <!--
+            foregroundServiceType="shortService" satisfies Android 14's requirement
+            that every foreground service declare a type (targetSdk >= 34).
+            The service runs briefly to schedule the alarm, then stops itself.
+        -->
         <service
             android:name=".OmerService"
             android:exported="false"
-            android:stopWithTask="false" />
+            android:stopWithTask="false"
+            android:foregroundServiceType="shortService" />
 
     </application>
 
