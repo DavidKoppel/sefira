@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
@@ -20,6 +22,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      # Fonts needed by the generateOmerIcons Gradle task (Java AWT headless)
+      - name: Install fonts for icon generation
+        run: sudo apt-get install -y fonts-dejavu-core
 
       # Download Gradle 8.2 and use it to regenerate the wrapper (includes the jar)
       - name: Install Gradle 8.2
