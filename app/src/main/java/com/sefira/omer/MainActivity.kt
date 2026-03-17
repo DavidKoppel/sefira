@@ -18,10 +18,11 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
-import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.textfield.TextInputEditText
 import com.kosherjava.zmanim.hebrewcalendar.JewishCalendar
 import com.sefira.omer.databinding.ActivityMainBinding
+import com.sefira.omer.databinding.DialogSuggestBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -32,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val fusedClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
-    private val fmt = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
+    private val fmt     = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
     private val timeFmt = SimpleDateFormat("h:mm a", Locale.getDefault())
 
     private val locationPermLauncher = registerForActivityResult(
@@ -50,36 +51,86 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Main enable switch
+        // ── Enable switch ────────────────────────────────────────────────────
         binding.switchEnabled.setOnCheckedChangeListener { _, isChecked ->
             AlarmScheduler.setEnabled(this, isChecked)
-            if (isChecked) checkPermissionsAndSchedule() else { AlarmScheduler.cancelAlarm(this); updateStatus() }
+            if (isChecked) {
+                checkPermissionsAndSchedule()
+                OmerService.start(this)
+            } else {
+                AlarmScheduler.cancelAlarm(this)
+                OmerService.stop(this)
+                updateStatus()
+            }
         }
         binding.btnRefreshLocation.setOnClickListener { fetchLocationAndSchedule() }
 
-        // Test mode switch
+        // ── Volume slider ────────────────────────────────────────────────────
+        val savedVol = AlarmScheduler.getVolume(this)
+        binding.sliderVolume.value = savedVol.toFloat()
+        binding.tvVolumePercent.text = "$savedVol%"
+        binding.sliderVolume.addOnChangeListener { _, value, _ ->
+            val v = value.toInt()
+            AlarmScheduler.setVolume(this, v)
+            binding.tvVolumePercent.text = "$v%"
+        }
+
+        // ── Vibrate switch ───────────────────────────────────────────────────
+        binding.switchVibrate.isChecked = AlarmScheduler.getVibrate(this)
+        binding.switchVibrate.setOnCheckedChangeListener { _, isChecked ->
+            AlarmScheduler.setVibrate(this, isChecked)
+        }
+
+        // ── Language toggle ──────────────────────────────────────────────────
+        when (AlarmScheduler.getLanguage(this)) {
+            "en"  -> binding.toggleLanguage.check(R.id.btnLangEn)
+            "he"  -> binding.toggleLanguage.check(R.id.btnLangHe)
+            else  -> binding.toggleLanguage.check(R.id.btnLangBoth)
+        }
+        binding.toggleLanguage.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                AlarmScheduler.setLanguage(this, when (checkedId) {
+                    R.id.btnLangEn -> "en"
+                    R.id.btnLangHe -> "he"
+                    else           -> "both"
+                })
+            }
+        }
+
+        // ── Suggestions ──────────────────────────────────────────────────────
+        binding.btnSuggest.setOnClickListener { showSuggestionDialog() }
+
+        // ── Test mode ────────────────────────────────────────────────────────
         binding.switchTestMode.setOnCheckedChangeListener { _, isChecked ->
             if (!isChecked) {
                 AlarmScheduler.setTestDate(this, null)
                 binding.testControls.visibility = View.GONE
             } else {
                 binding.testControls.visibility = View.VISIBLE
-                // Default to today if no test date set
                 if (AlarmScheduler.getTestDate(this) == null) {
                     AlarmScheduler.setTestDate(this, System.currentTimeMillis())
                 }
             }
             updateTestPreview()
         }
-
         binding.btnPickDate.setOnClickListener { showDatePicker() }
-
-        binding.btnFireNow.setOnClickListener { fireTestAlarmNow() }
+        binding.btnFireNow.setOnClickListener  { fireTestAlarmNow() }
     }
 
     override fun onResume() {
         super.onResume()
         binding.switchEnabled.isChecked = AlarmScheduler.isEnabled(this)
+        binding.switchVibrate.isChecked = AlarmScheduler.getVibrate(this)
+        val vol = AlarmScheduler.getVolume(this)
+        binding.sliderVolume.value = vol.toFloat()
+        binding.tvVolumePercent.text = "$vol%"
+        // Restore language toggle without triggering the listener
+        binding.toggleLanguage.removeOnButtonCheckedListener { _, _, _ -> }
+        when (AlarmScheduler.getLanguage(this)) {
+            "en" -> binding.toggleLanguage.check(R.id.btnLangEn)
+            "he" -> binding.toggleLanguage.check(R.id.btnLangHe)
+            else -> binding.toggleLanguage.check(R.id.btnLangBoth)
+        }
         val testOn = AlarmScheduler.isTestModeOn(this)
         binding.switchTestMode.isChecked = testOn
         binding.testControls.visibility = if (testOn) View.VISIBLE else View.GONE
@@ -88,27 +139,63 @@ class MainActivity : AppCompatActivity() {
         if (AlarmScheduler.isEnabled(this)) checkPermissionsAndSchedule()
     }
 
+    // ── Suggestions ───────────────────────────────────────────────────────────
+
+    private fun showSuggestionDialog() {
+        val dialogBinding = DialogSuggestBinding.inflate(layoutInflater)
+
+        // Default selection: "New Feature"
+        dialogBinding.toggleType.check(R.id.btnTypeFeature)
+
+        AlertDialog.Builder(this)
+            .setTitle("Share Your Idea")
+            .setView(dialogBinding.root)
+            .setPositiveButton("Send Email") { _, _ ->
+                val isFeature = dialogBinding.toggleType.checkedButtonId == R.id.btnTypeFeature
+                val type = if (isFeature) "New Feature Suggestion" else "New App Idea"
+                val body = dialogBinding.etSuggestion.text?.toString()?.trim().orEmpty()
+                if (body.isEmpty()) {
+                    Toast.makeText(this, "Please describe your idea first", Toast.LENGTH_SHORT).show()
+                } else {
+                    sendSuggestionEmail(type, body)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun sendSuggestionEmail(type: String, body: String) {
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")
+            putExtra(Intent.EXTRA_EMAIL,   arrayOf("gevaldikApps@gmail.com"))
+            putExtra(Intent.EXTRA_SUBJECT, "Sefira App — $type")
+            putExtra(Intent.EXTRA_TEXT,    body)
+        }
+        try {
+            startActivity(Intent.createChooser(intent, "Send via…"))
+        } catch (_: Exception) {
+            Toast.makeText(this,
+                "No email app found. Please email gevaldikApps@gmail.com",
+                Toast.LENGTH_LONG).show()
+        }
+    }
+
     // ── Date picker ───────────────────────────────────────────────────────────
 
     private fun showDatePicker() {
         val current = AlarmScheduler.getTestDate(this)?.timeInMillis
             ?: MaterialDatePicker.todayInUtcMilliseconds()
-
         val picker = MaterialDatePicker.Builder.datePicker()
             .setTitleText("Choose a test date")
             .setSelection(current)
             .build()
-
-        picker.addOnPositiveButtonClickListener { selectionUtcMs ->
-            // MaterialDatePicker returns UTC midnight; convert to local Calendar day
-            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).also {
-                it.timeInMillis = selectionUtcMs
-            }
-            val localCal = Calendar.getInstance().also {
-                it.set(utcCal.get(Calendar.YEAR), utcCal.get(Calendar.MONTH), utcCal.get(Calendar.DAY_OF_MONTH), 12, 0, 0)
+        picker.addOnPositiveButtonClickListener { selUtcMs ->
+            val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).also { it.timeInMillis = selUtcMs }
+            val local = Calendar.getInstance().also {
+                it.set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), 12, 0, 0)
                 it.set(Calendar.MILLISECOND, 0)
             }
-            AlarmScheduler.setTestDate(this, localCal.timeInMillis)
+            AlarmScheduler.setTestDate(this, local.timeInMillis)
             updateTestPreview()
         }
         picker.show(supportFragmentManager, "date_picker")
@@ -116,24 +203,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateTestPreview() {
         val testCal = AlarmScheduler.getTestDate(this) ?: return
-        val dateStr = fmt.format(testCal.time)
+        val isSat   = testCal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
         val omerDay = AlarmScheduler.omerDayForEvening(testCal)
-        val isSat = testCal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
-
-        // Sunset info
         val (lat, lon) = AlarmScheduler.getSavedLocation(this) ?: Pair(0.0, 0.0)
         val sunset = if (lat != 0.0 || lon != 0.0)
             AlarmScheduler.sunsetForDate(lat, lon, testCal) else null
-
         val sunsetStr = if (sunset != null) {
             val t = if (isSat) Date(sunset.time + 20 * 60 * 1000L) else sunset
-            "(alarm at ${timeFmt.format(t)})"
+            " (alarm at ${timeFmt.format(t)})"
         } else ""
-
-        val satNote = if (isSat) " — Motzei Shabbat (+20 min) " else " "
-
-        binding.tvTestDate.text = "Test date: $dateStr$satNote$sunsetStr"
-
+        val satNote = if (isSat) " — Motzei Shabbat " else " "
+        binding.tvTestDate.text = "Test date: ${fmt.format(testCal.time)}$satNote$sunsetStr"
         if (omerDay < 0) {
             binding.tvTestPreview.text = "⚠ Not an Omer night — alarm would not fire"
             binding.tvTestPreview.visibility = View.VISIBLE
@@ -148,11 +228,7 @@ class MainActivity : AppCompatActivity() {
     private fun fireTestAlarmNow() {
         val testCal = AlarmScheduler.getTestDate(this) ?: return
         val omerDay = AlarmScheduler.omerDayForEvening(testCal)
-        if (omerDay < 0) {
-            Toast.makeText(this, "Not an Omer night for that date", Toast.LENGTH_SHORT).show()
-            return
-        }
-        // Launch AlarmActivity immediately (no AlarmManager delay)
+        if (omerDay < 0) return
         startActivity(
             Intent(this, AlarmActivity::class.java)
                 .putExtra(AlarmReceiver.EXTRA_OMER_DAY, omerDay)
@@ -192,7 +268,7 @@ class MainActivity : AppCompatActivity() {
     private fun showLocationRationale() {
         AlertDialog.Builder(this)
             .setTitle("Location Required")
-            .setMessage("Location is needed to calculate the local sunset time for the Sefira reminder.")
+            .setMessage("Location is needed to calculate the local sunset time.")
             .setPositiveButton("Grant") { _, _ ->
                 locationPermLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
             }
@@ -212,19 +288,22 @@ class MainActivity : AppCompatActivity() {
             .addOnSuccessListener { loc ->
                 val useLoc = loc ?: run {
                     fusedClient.lastLocation.addOnSuccessListener { last ->
-                        if (last != null) { AlarmScheduler.saveLocation(this, last.latitude, last.longitude); AlarmScheduler.scheduleNext(this) }
+                        if (last != null) {
+                            AlarmScheduler.saveLocation(this, last.latitude, last.longitude)
+                            OmerService.start(this)
+                        }
                         updateStatus(); updateTestPreview()
                     }
                     return@addOnSuccessListener
                 }
                 AlarmScheduler.saveLocation(this, useLoc.latitude, useLoc.longitude)
-                if (AlarmScheduler.isEnabled(this)) AlarmScheduler.scheduleNext(this)
+                if (AlarmScheduler.isEnabled(this)) OmerService.start(this)
                 updateStatus(); updateTestPreview()
             }
             .addOnFailureListener { updateStatus() }
     }
 
-    // ── Status Display ────────────────────────────────────────────────────────
+    // ── Status display ────────────────────────────────────────────────────────
 
     private fun updateStatus() {
         val (lat, lon) = AlarmScheduler.getSavedLocation(this) ?: run {
@@ -245,7 +324,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvOmerInfo.visibility = View.VISIBLE
         binding.tvOmerInfo.text = OmerHelper.getEnglishText(omerDay)
 
-        val today = Calendar.getInstance()
+        val today  = Calendar.getInstance()
         val sunset = AlarmScheduler.sunsetForDate(lat, lon, today)
         val isSat  = today.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
 

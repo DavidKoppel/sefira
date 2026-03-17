@@ -16,9 +16,12 @@ object AlarmScheduler {
     private const val PREFS       = "sefira_prefs"
     private const val KEY_LAT     = "lat"
     private const val KEY_LON     = "lon"
-    private const val KEY_ENABLED = "enabled"
+    private const val KEY_ENABLED   = "enabled"
     private const val KEY_TEST_DATE = "test_date_ms"   // -1 = disabled
-    const val REQUEST_CODE        = 1001
+    private const val KEY_VOLUME    = "volume"         // 0..100
+    private const val KEY_VIBRATE   = "vibrate"        // boolean
+    private const val KEY_LANGUAGE  = "language"       // "en" | "he" | "both"
+    const val REQUEST_CODE          = 1001
 
     // ── Location ──────────────────────────────────────────────────────────────
 
@@ -39,6 +42,26 @@ object AlarmScheduler {
     }
 
     fun isEnabled(context: Context) = prefs(context).getBoolean(KEY_ENABLED, true)
+
+    // ── Volume / Vibration ────────────────────────────────────────────────────
+
+    fun setVolume(context: Context, vol: Int) {
+        prefs(context).edit().putInt(KEY_VOLUME, vol.coerceIn(0, 100)).apply()
+    }
+    fun getVolume(context: Context): Int = prefs(context).getInt(KEY_VOLUME, 80)
+
+    fun setVibrate(context: Context, v: Boolean) {
+        prefs(context).edit().putBoolean(KEY_VIBRATE, v).apply()
+    }
+    fun getVibrate(context: Context): Boolean = prefs(context).getBoolean(KEY_VIBRATE, true)
+
+    // ── Language ("en" | "he" | "both") ──────────────────────────────────────
+
+    fun setLanguage(context: Context, lang: String) {
+        prefs(context).edit().putString(KEY_LANGUAGE, lang).apply()
+    }
+    fun getLanguage(context: Context): String =
+        prefs(context).getString(KEY_LANGUAGE, "both") ?: "both"
 
     // ── Test date ─────────────────────────────────────────────────────────────
 

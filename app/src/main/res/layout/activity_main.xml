@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
@@ -77,11 +78,173 @@
             android:backgroundTint="@color/gold"
             android:textColor="@color/bg_dark" />
 
+        <!-- ───── Settings Section ───── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/text_dim" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ALARM SETTINGS"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@drawable/card_bg">
+
+            <!-- Volume row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔊"
+                    android:textSize="18sp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Volume"
+                    android:textColor="@color/text_light"
+                    android:textSize="15sp"
+                    android:layout_marginEnd="8dp" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderVolume"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:valueFrom="0"
+                    android:valueTo="100"
+                    android:stepSize="5"
+                    android:value="80"
+                    app:thumbColor="@color/gold"
+                    app:trackColorActive="@color/gold"
+                    app:trackColorInactive="@color/text_dim" />
+
+                <TextView
+                    android:id="@+id/tvVolumePercent"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:text="80%"
+                    android:textColor="@color/gold"
+                    android:textSize="13sp"
+                    android:gravity="end"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+            <!-- Vibration row -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchVibrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Vibrate"
+                android:textColor="@color/text_light"
+                android:textSize="15sp" />
+
+            <!-- Language row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Language"
+                    android:textColor="@color/text_light"
+                    android:textSize="15sp"
+                    android:layout_marginEnd="16dp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleLanguage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLangEn"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="English"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_light" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLangBoth"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Both"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_light" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLangHe"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="עברית"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_light" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ───── Suggestions Section ───── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/text_dim" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="FEEDBACK"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSuggest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:text="💡  Suggest a Feature or New App"
+            android:textColor="@color/gold_light"
+            android:textSize="14sp"
+            app:strokeColor="@color/gold_light" />
+
         <!-- ───── Test Mode Section ───── -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"
             android:background="@color/text_dim" />
 
@@ -93,7 +256,6 @@
             android:textColor="@color/text_light"
             android:textSize="16sp" />
 
-        <!-- Test controls (hidden unless test mode on) -->
         <LinearLayout
             android:id="@+id/testControls"
             android:layout_width="match_parent"
@@ -112,7 +274,6 @@
                 android:textSize="13sp"
                 android:layout_marginBottom="10dp" />
 
-            <!-- Selected date label -->
             <TextView
                 android:id="@+id/tvTestDate"
                 android:layout_width="match_parent"
@@ -122,7 +283,6 @@
                 android:textSize="14sp"
                 android:lineSpacingMultiplier="1.3" />
 
-            <!-- Preview of omer text -->
             <TextView
                 android:id="@+id/tvTestPreview"
                 android:layout_width="match_parent"
@@ -134,7 +294,6 @@
                 android:textStyle="italic"
                 android:visibility="gone" />
 
-            <!-- Buttons row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -165,10 +324,9 @@
                     android:enabled="false" />
 
             </LinearLayout>
-
         </LinearLayout>
 
-        <!-- Footer note -->
+        <!-- Footer -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -177,7 +335,7 @@
             android:textSize="12sp"
             android:gravity="center"
             android:lineSpacingMultiplier="1.4"
-            android:text="Alarm fires at local sunset each evening\nduring the 49-day Omer period.\nSaturday night: 20 minutes after sunset." />
+            android:text="Alarm fires at local sunset each evening\nduring the 49-day Omer period.\nSaturday night: 20 minutes after sunset.\nThe app runs silently in the background\nand stops automatically after Shavuot." />
 
     </LinearLayout>
 </ScrollView>

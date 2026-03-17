@@ -53,8 +53,9 @@ class AlarmReceiver : BroadcastReceiver() {
         // Also start the activity directly for older devices / reliable delivery
         context.startActivity(alarmIntent)
 
-        // Schedule next night's alarm
-        AlarmScheduler.scheduleNext(context)
+        // Restart the background service — it will schedule the next night's alarm
+        // and update the persistent notification with the new day info
+        OmerService.start(context)
     }
 
     private fun ensureChannel(context: Context) {

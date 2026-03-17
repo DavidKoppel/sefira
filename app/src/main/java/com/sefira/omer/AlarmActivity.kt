@@ -7,9 +7,13 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.media.ToneGenerator
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import com.sefira.omer.databinding.ActivityAlarmBinding
@@ -19,14 +23,17 @@ class AlarmActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAlarmBinding
     private var mediaPlayer: MediaPlayer? = null
     private var toneGen: ToneGenerator? = null
+    private var vibrator: Vibrator? = null
     private val stopHandler = Handler(Looper.getMainLooper())
-    private val AUTO_STOP_MS = 10_000L   // 10 seconds
-    private val SNOOZE_MS    = 20 * 60 * 1000L  // 20 minutes
+    private val AUTO_STOP_MS = 10_000L
+    private val SNOOZE_MS    = 20 * 60 * 1000L
+
+    // Vibration: 600 ms on, 300 ms off, repeat
+    private val VIBRATE_PATTERN = longArrayOf(0, 600, 300)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Show over lock screen and turn on screen
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
             WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
@@ -44,16 +51,27 @@ class AlarmActivity : AppCompatActivity() {
         binding.tvEnglish.text  = OmerHelper.getEnglishText(omerDay)
         binding.tvHebrew.text   = OmerHelper.getHebrewText(omerDay)
 
+        // Apply language preference
+        when (AlarmScheduler.getLanguage(this)) {
+            "en" -> binding.tvHebrew.visibility  = android.view.View.GONE
+            "he" -> binding.tvEnglish.visibility = android.view.View.GONE
+            // "both" → show both (default, no change needed)
+        }
+
         binding.btnStop.setOnClickListener { stopAndDismiss() }
         binding.btnSnooze.setOnClickListener { snooze() }
 
         startAlarmSound()
+        startVibration()
 
-        // Auto-stop after 10 s (sound stops; activity stays until user taps)
-        stopHandler.postDelayed({ stopAlarmSound() }, AUTO_STOP_MS)
+        // Auto-stop sound + vibration after 10 seconds; screen stays on for user to tap
+        stopHandler.postDelayed({ stopAlarmSound(); stopVibration() }, AUTO_STOP_MS)
     }
 
+    // ── Sound ─────────────────────────────────────────────────────────────────
+
     private fun startAlarmSound() {
+        val volFloat = AlarmScheduler.getVolume(this) / 100f
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -67,12 +85,13 @@ class AlarmActivity : AppCompatActivity() {
                 setDataSource(this@AlarmActivity, uri)
                 isLooping = true
                 prepare()
+                setVolume(volFloat, volFloat)
                 start()
             }
         } catch (_: Exception) {
-            // Fallback: built-in tone
             try {
-                toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 100).also {
+                val toneVol = (volFloat * 100).toInt().coerceIn(0, 100)
+                toneGen = ToneGenerator(AudioManager.STREAM_ALARM, toneVol).also {
                     it.startTone(ToneGenerator.TONE_PROP_BEEP2, AUTO_STOP_MS.toInt())
                 }
             } catch (_: Exception) { }
@@ -81,38 +100,60 @@ class AlarmActivity : AppCompatActivity() {
 
     private fun stopAlarmSound() {
         stopHandler.removeCallbacksAndMessages(null)
-        mediaPlayer?.runCatching {
-            if (isPlaying) stop()
-            release()
-        }
+        mediaPlayer?.runCatching { if (isPlaying) stop(); release() }
         mediaPlayer = null
         toneGen?.release()
         toneGen = null
     }
 
+    // ── Vibration ─────────────────────────────────────────────────────────────
+
+    private fun startVibration() {
+        if (!AlarmScheduler.getVibrate(this)) return
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createWaveform(VIBRATE_PATTERN, 0))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(VIBRATE_PATTERN, 0)
+        }
+    }
+
+    private fun stopVibration() {
+        vibrator?.cancel()
+        vibrator = null
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+
     private fun snooze() {
         stopAlarmSound()
+        stopVibration()
         dismissNotification()
 
-        // Re-fire alarm in 20 minutes by scheduling a one-off pending intent
-        val intent = android.content.Intent(this, AlarmReceiver::class.java).apply {
+        val snoozeIntent = android.content.Intent(this, AlarmReceiver::class.java).apply {
             putExtra(AlarmReceiver.EXTRA_OMER_DAY, intent.getIntExtra(AlarmReceiver.EXTRA_OMER_DAY, 1))
         }
         val pi = android.app.PendingIntent.getBroadcast(
-            this, AlarmScheduler.REQUEST_CODE + 1, intent,
+            this, AlarmScheduler.REQUEST_CODE + 1, snoozeIntent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
-        val am = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-        am.setExactAndAllowWhileIdle(
-            android.app.AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + SNOOZE_MS,
-            pi
-        )
+        (getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager)
+            .setExactAndAllowWhileIdle(
+                android.app.AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + SNOOZE_MS, pi
+            )
         finish()
     }
 
     private fun stopAndDismiss() {
         stopAlarmSound()
+        stopVibration()
         dismissNotification()
         finish()
     }
@@ -125,5 +166,6 @@ class AlarmActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopAlarmSound()
+        stopVibration()
     }
 }
