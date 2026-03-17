@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity() {
         binding.testControls.visibility = if (testOn) View.VISIBLE else View.GONE
         updateStatus()
         updateTestPreview()
+        DynamicIcon.update(this)
         if (AlarmScheduler.isEnabled(this)) checkPermissionsAndSchedule()
     }
 

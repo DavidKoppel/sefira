@@ -65,6 +65,7 @@ class OmerService : Service() {
         }
 
         AlarmScheduler.scheduleNext(this)
+        DynamicIcon.update(this)
 
         // Detach the notification (keeps it visible as a regular notification)
         // then let the service stop — no need to keep running.

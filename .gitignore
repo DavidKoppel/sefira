@@ -9,3 +9,4 @@
 .cxx
 local.properties
 app/build/
+app/src/main/res/drawable-nodpi/ic_omer_day_*.png
