@@ -1,3 +1,8 @@
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.zip.CRC32
+import java.util.zip.DeflaterOutputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -66,27 +71,27 @@ val OMER_FONT: Map<Char, IntArray> = mapOf(
 fun omerInt4(v: Int): ByteArray =
     byteArrayOf((v shr 24).toByte(), (v shr 16).toByte(), (v shr 8).toByte(), v.toByte())
 
-fun omerChunk(out: java.io.OutputStream, type: String, data: ByteArray) {
+fun omerChunk(out: ByteArrayOutputStream, type: String, data: ByteArray) {
     out.write(omerInt4(data.size))
     val tb = type.toByteArray(Charsets.US_ASCII)
     out.write(tb)
     out.write(data)
-    val crc = java.util.zip.CRC32().also { it.update(tb); it.update(data) }
+    val crc = CRC32().also { it.update(tb); it.update(data) }
     out.write(omerInt4(crc.value.toInt()))
 }
 
-fun writeOmerPng(file: java.io.File, pixels: IntArray, w: Int, h: Int) {
-    val out = java.io.ByteArrayOutputStream()
+fun writeOmerPng(file: File, pixels: IntArray, w: Int, h: Int) {
+    val out = ByteArrayOutputStream()
     // PNG signature
     out.write(byteArrayOf(137.toByte(), 80, 78, 71, 13, 10, 26, 10))
     // IHDR
-    val ihdr = java.io.ByteArrayOutputStream()
+    val ihdr = ByteArrayOutputStream()
     ihdr.write(omerInt4(w)); ihdr.write(omerInt4(h))
     ihdr.write(8); ihdr.write(6) // 8-bit RGBA
     ihdr.write(0); ihdr.write(0); ihdr.write(0)
     omerChunk(out, "IHDR", ihdr.toByteArray())
     // IDAT: raw RGBA rows, then zlib-compressed
-    val raw = java.io.ByteArrayOutputStream()
+    val raw = ByteArrayOutputStream()
     for (y in 0 until h) {
         raw.write(0) // filter: None
         for (x in 0 until w) {
@@ -97,8 +102,8 @@ fun writeOmerPng(file: java.io.File, pixels: IntArray, w: Int, h: Int) {
             raw.write((p ushr 24) and 0xFF) // A
         }
     }
-    val comp = java.io.ByteArrayOutputStream()
-    java.util.zip.DeflaterOutputStream(comp).also { it.write(raw.toByteArray()); it.close() }
+    val comp = ByteArrayOutputStream()
+    DeflaterOutputStream(comp).also { d -> d.write(raw.toByteArray()); d.close() }
     omerChunk(out, "IDAT", comp.toByteArray())
     omerChunk(out, "IEND", byteArrayOf())
     file.writeBytes(out.toByteArray())
@@ -173,7 +178,7 @@ tasks.register("generateOmerIcons") {
         outDir.mkdirs()
         for (day in 1..49) {
             val pixels = makeOmerIconPixels(day)
-            writeOmerPng(java.io.File(outDir, "ic_omer_day_$day.png"), pixels, 192, 192)
+            writeOmerPng(File(outDir, "ic_omer_day_$day.png"), pixels, 192, 192)
         }
         println("generateOmerIcons: wrote 49 icons to $outDir")
     }
